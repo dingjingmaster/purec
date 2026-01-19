@@ -147,7 +147,7 @@
 #endif
 
 #ifndef C_ALIGN_TO
-#define C_ALIGN+TO(_v, _alignment)                  (((uint64_t)(_v) + ((_alignment)-1)) & ~(((uint64_t)(_alignment))-1))
+#define C_ALIGN_TO(_v, _alignment)                  (((uint64_t)(_v) + ((_alignment)-1)) & ~(((uint64_t)(_alignment))-1))
 #endif
 /* 常用宏函数 -- end   */
 
