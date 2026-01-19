@@ -82,13 +82,6 @@ void c_sm3_finish           (Sm3Context* ctx, uint8_t dGst[C_SM3_DIGEST_SIZE]);
  */
 void c_sm3_digest           (const uint8_t* data, size_t dataLen, uint8_t dGst[C_SM3_DIGEST_SIZE]);
 
-/**
- * @brief SM3哈希的核心压缩函数, 用于对512-bit消息块进行压缩并更新哈希状态
- * @param digest
- * @param data
- * @param blocks
- */
-void c_sm3_compress_blocks  (uint32_t digest[8], const uint8_t *data, size_t blocks);
 
 /**
  * @brief (HMAC, Hash-based Message Authentication Code), 一种基于hash函数的消息认证码, 初始化并生成 ipad和opad
@@ -100,6 +93,7 @@ void c_sm3_hmac_init        (Sm3HMACContext* ctx, const uint8_t* key, size_t key
 void c_sm3_hmac_update      (Sm3HMACContext* ctx, const uint8_t* data, size_t dataLen);
 void c_sm3_hmac_finish      (Sm3HMACContext* ctx, uint8_t mac[C_SM3_HMAC_SIZE]);
 void c_sm3_hmac             (const uint8_t* key, size_t keyLen, const uint8_t* data, size_t dataLen, uint8_t mac[C_SM3_HMAC_SIZE]);
+
 
 /**
  * @brief KDF(Key Derivation Function, 密钥派生函数);
