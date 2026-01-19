@@ -33,11 +33,11 @@ typedef struct _Sm4Context Sm4Context;
 
 struct _Sm4Context
 {
-    uint32_t enKey[32]; //encrypt key
-    uint32_t deKey[32]; //decrypt key
-    uint32_t ulBuf[36]; //used in round
-    uint8_t IV[16]; //intialized value
-    uint8_t iMode;  //ECB/CBC etc
+    uint32_t    enKey[32];  // encrypt key
+    uint32_t    deKey[32];  // decrypt key
+    uint32_t    ulBuf[36];  // used in round
+    uint8_t     IV[16];     // initialized value
+    uint8_t     iMode;      // ECB/CBC etc
 };
 
 void c_sm4_set_key       (uint32_t SK[32], const uint8_t key[16]);
