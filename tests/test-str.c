@@ -82,6 +82,31 @@ int main (int argc, char* argv[])
         printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
     }
 
+    printf("字符串匹配\n");
+    {
+        const char* str = "/a/b/c/d.txt";
+        const char* pat = "*.txt";
+
+        printf("'%s' -> '%s' => '%s'\n",
+            str, pat, c_utils_str_match_case_insensitive((uint8_t*)str, (uint8_t*)pat) ? "true" : "false");
+    }
+
+    {
+        const char* str = "/a/b/c/d.txt";
+        const char* pat = "c/*.txt";
+
+        printf("'%s' -> '%s' => '%s'\n",
+            str, pat, c_utils_str_match_case_insensitive((uint8_t*)str, (uint8_t*)pat) ? "true" : "false");
+    }
+
+    {
+        const char* str = "/a/b/c/d.txt";
+        const char* pat = "*c/*.txt";
+
+        printf("'%s' -> '%s' => '%s'\n",
+            str, pat, c_utils_str_match_case_insensitive((uint8_t*)str, (uint8_t*)pat) ? "true" : "false");
+    }
+
     printf("Finished!\n");
 
     return 0;

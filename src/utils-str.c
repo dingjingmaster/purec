@@ -76,4 +76,94 @@ int c_utils_str_get_file_name_and_dir (C_IN const uint8_t* filePath, C_IN_OUT ui
     return 0;
 }
 
+bool c_utils_str_match_case_insensitive(const uint8_t* str, uint8_t const* pat)
+{
+        char* class = NULL;
+    bool match = false;
+    bool inverted = false;
+    unsigned char a = 0, b = 0;
+    char const *backPat = NULL, *backStr = NULL;
+
+    for (;;) {
+        unsigned char c = *str++;
+        unsigned char d = *pat++;
+        if (c >= 'A' && c <= 'Z') { c += 32; }
+        if (d >= 'A' && d <= 'Z') { d += 32; }
+        switch (d) {
+            case '?': {   /* Wildcard: anything but nul */
+                if (c == '\0') {
+                    return false;
+                }
+                break;
+            }
+            case '*': {  /* Any-length wildcard */
+                if (*pat == '\0') {  /* Optimize trailing * case */
+                    return true;
+                }
+                backPat = pat;
+                backStr = --str;   /* Allow zero-length match */
+                break;
+            }
+            case '[': { /* Character class */
+                if (c == '\0') { /* No possible match */
+                    return false;
+                }
+                match = false;
+                inverted = (*pat == '!');
+                class = (char*) pat + inverted;
+                a = *class++;
+                /**
+                 * Iterate over each span in the character class.
+                 * A span is either a single character a, or a
+                 * range a-b.  The first span may begin with ']'.
+                 */
+                do {
+                    b = a;
+                    if (a == '\0') { /* Malformed */
+                        goto literal;
+                    }
+                    if (class[0] == '-' && class[1] != ']') {
+                        b = class[1];
+                        if (b == '\0') {
+                            goto literal;
+                        }
+                        class += 2;
+                        /* Any special action if a > b? */
+                    }
+                    match |= (a <= c && c <= b);
+                } while ((a = *class++) != ']');
+                if (match == inverted) {
+                    goto backtrack;
+                }
+                pat = class;
+                break;
+            }
+            case '\\': {
+                d = *pat++;
+                /* fall through */
+            }
+            default: {   /* Literal character */
+literal:
+                if (c == d) {
+                    if (d == '\0') {
+                        return true;
+                    }
+                    break;
+                }
+backtrack:
+                if (c == '\0' || !backPat) {
+                    return false;   /* No point continuing */
+                }
+                /* Try again from last *, one character later in str. */
+                pat = backPat;
+                str = ++backStr;
+                break;
+            }
+        }
+    }
+
+
+    return false;
+}
+
 
