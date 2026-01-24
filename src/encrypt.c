@@ -238,8 +238,8 @@ void c_encrypt_decrypt_buffer(uint8_t* buffer, uint64_t bufLen, const uint8_t* k
             c_encrypt_decode_en_rc4(buffer, bufLen, key, keyLen);
             break;
         }
-        case C_ENCRYPT_ARITH_AES: {
-            c_encrypt_decode_aes(buffer, bufLen, key, keyLen);
+        case C_ENCRYPT_ARITH_AES_ECB: {
+            c_encrypt_decode_aes_ecb(buffer, bufLen, key, keyLen);
             break;
         }
         case C_ENCRYPT_ARITH_SM4: {
