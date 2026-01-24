@@ -22,9 +22,56 @@
 
 #include <stdio.h>
 
+#include "../src/utils-str.h"
+
 int main (int argc, char* argv[])
 {
     printf("Start test....\n");
+
+    {
+        const char* fullPath = "/a/b/c/d.txt";
+        char dirPath[1024] = {0};
+        char fileName[1024] = {0};
+        c_utils_str_get_file_name_and_dir((uint8_t*) fullPath,
+            (uint8_t*) fileName, sizeof(fileName) - 1, (uint8_t*) dirPath, sizeof(dirPath));
+        printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
+    }
+
+    {
+        const char* fullPath = "a/b/c/d.txt";
+        char dirPath[1024] = {0};
+        char fileName[1024] = {0};
+        c_utils_str_get_file_name_and_dir((uint8_t*) fullPath,
+            (uint8_t*) fileName, sizeof(fileName) - 1, (uint8_t*) dirPath, sizeof(dirPath));
+        printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
+    }
+
+    {
+        const char* fullPath = "/";
+        char dirPath[1024] = {0};
+        char fileName[1024] = {0};
+        c_utils_str_get_file_name_and_dir((uint8_t*) fullPath,
+            (uint8_t*) fileName, sizeof(fileName) - 1, (uint8_t*) dirPath, sizeof(dirPath));
+        printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
+    }
+
+    {
+        const char* fullPath = "";
+        char dirPath[1024] = {0};
+        char fileName[1024] = {0};
+        c_utils_str_get_file_name_and_dir((uint8_t*) fullPath,
+            (uint8_t*) fileName, sizeof(fileName) - 1, (uint8_t*) dirPath, sizeof(dirPath));
+        printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
+    }
+
+    {
+        const char* fullPath = " ";
+        char dirPath[1024] = {0};
+        char fileName[1024] = {0};
+        c_utils_str_get_file_name_and_dir((uint8_t*) fullPath,
+            (uint8_t*) fileName, sizeof(fileName) - 1, (uint8_t*) dirPath, sizeof(dirPath));
+        printf("'%s' => '%s' -> '%s'\n", fullPath, dirPath, fileName);
+    }
 
     printf("Finished!\n");
 

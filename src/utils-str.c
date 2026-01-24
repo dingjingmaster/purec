@@ -37,8 +37,9 @@ int c_utils_str_get_file_name_and_dir (C_IN const uint8_t* filePath, C_IN_OUT ui
 {
     int i = 0;
     int j = 0;
+    int dirEnd = 0;
     int nameLen = 0;
-    const uint8_t* name = NULL;
+    int dirRealLen = 0;
 
     if (!filePath || !fileName || !dirPath) { return -1; }
 
@@ -47,21 +48,29 @@ int c_utils_str_get_file_name_and_dir (C_IN const uint8_t* filePath, C_IN_OUT ui
 
     nameLen = (int) strlen ((char*) filePath);
 
-    for (i = nameLen - 1; ((i >= 0) && ('/' != filePath[i])); name = filePath + i, i--);
+    for (i = nameLen - 1; ((i >= 0) && ('/' != filePath[i])); i--);
 
-    if (!name) { name = filePath; }
+    dirEnd = i;
 
     for (i = 0; i < nameLen; i++) {
-        if (filePath + i < name) {
+        if (i <= dirEnd) {
             if (i < dirPathLen - 1) {
+                dirRealLen++;
                 dirPath[i] = (uint8_t) filePath[i];
             }
             continue;
         }
-        j = (int) (filePath - name) + i;
+
         if (j < fileNameLen - 1) {
+            if (filePath[i] == '/') {
+                continue;
+            }
             fileName[j] = (uint8_t) filePath[i];
         }
+    }
+
+    if (dirRealLen > 1 && dirPath[dirRealLen - 1] == '/') {
+        dirPath[dirRealLen - 1] = '\0';
     }
 
     return 0;
