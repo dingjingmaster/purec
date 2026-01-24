@@ -23,6 +23,7 @@
 #define purec_PUREC_ENCRYPT_H
 #include "common.h"
 
+// FIXME:// AES 算法还不完善
 
 /* 加解密算法 -- start */
 #define C_ENCRYPT_ARITH_NONE                        0
