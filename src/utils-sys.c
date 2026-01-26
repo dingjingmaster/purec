@@ -19,42 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef purec_PUREC_UTILS_STR_H
-#define purec_PUREC_UTILS_STR_H
-#include "common.h"
+#include "utils-sys.h"
+
+#ifndef __KERNEL_MODULE__
+
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
 
 
-C_BEGIN_EXTERN_C
+uint64_t c_utils_sys_get_page_size (void)
+{
+    long r = sysconf(_SC_PAGESIZE);
+    return r <= 0 ? 4096 : (size_t)r;
+}
 
-/**
- * @brief 十六进制转为字符串
- *
- * @param dest
- * @param hex
- * @param hexBytes
- */
-void        c_utils_str_hex2str                 (C_OUT uint8_t* dest, C_IN const uint8_t* hex, C_IN uint32_t hexBytes);
-
-/**
- * @brief 获取路径中的文件夹和文件
- * @param filePath
- * @param fileName
- * @param fileNameLen
- * @param dirPath
- * @param dirPathLen
- * @return 成功返回 0
- */
-int         c_utils_str_get_file_name_and_dir   (C_IN const uint8_t* filePath, C_IN_OUT uint8_t* fileName, C_IN uint32_t fileNameLen, C_IN_OUT uint8_t* dirPath, C_IN uint32_t dirPathLen);
-
-/**
- * @brief 字符串匹配（大小写不敏感）, 支持的正则元素: ?、*、[]
- * @param str
- * @param pat
- * @return
- */
-bool        c_utils_str_match_case_insensitive  (const uint8_t* str, uint8_t const* pat);
-
-
-C_END_EXTERN_C
-
-#endif // purec_PUREC_UTILS_STR_H
+#endif

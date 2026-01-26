@@ -45,6 +45,20 @@
 #define C_UUID_STRING_L                     40
 
 
+#define C_DEFAULT_DISK_ALIGNMENT            1048576 /* 1MiB */
+#define C_DEFAULT_MEM_ALIGNMENT             4096
+
+#define C_CRYPT_PLAIN                       "PLAIN"
+#define C_CRYPT_LUKS1                       "LUKS1"     // LUKS version 1 header on-disk
+#define C_CRYPT_LUKS2                       "LUKS2"     // LUKS version 2 header on-disk
+#define C_CRYPT_LOOP_AES                    "LOOPAES"   // loop-AES compatibility mode
+#define C_CRYPT_VERITY                      "VERITY"    // dm-verity mode
+#define C_CRYPT_TCRYPT                      "TCRYPT"    // TCRYPT (TrueCrypt-compatible and VeraCrypt-compatible) mode
+#define C_CRYPT_INTEGRITY                   "INTEGRITY" // INTEGRITY dm-integrity device
+#define C_CRYPT_BITLK                       "BITLK"     // BITLK (BitLocker-compatible mode)
+#define C_CRYPT_FVAULT2                     "FVAULT2"   // FVAULT2 (FileVault2-compatible mode)
+#define C_CRYPT_LUKS                        NULL        // LUKS any version
+
 C_BEGIN_EXTERN_C
 
 typedef enum
@@ -88,6 +102,13 @@ typedef struct _LUKSCryptParamsPlain
     uint64_t                    size;
     uint32_t                    sectorSize;
 } LUKSCryptParamsPlain;
+
+typedef struct _LUKSCryptParamsLoopAes
+{
+    const char*                 hash;               // key hash function
+    uint64_t                    offset;             // offset in sectors
+    uint64_t                    skip;               // IV offset / initialization sector
+} LUKSCryptParamsParamsLoopAes;
 
 typedef struct _LUKSPhdr
 {
