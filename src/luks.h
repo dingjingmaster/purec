@@ -23,6 +23,7 @@
 #define purec_PUREC_LUKS_H
 #include "common.h"
 
+#if 0
 
 #define C_MAX_CIPHER_LEN                    32
 #define C_MAX_CIPHER_LEN_STR                "31"
@@ -79,6 +80,17 @@ typedef enum
     LUKS_CRYPT_STATUS_INFO_BUSY,
 } LUKSCryptStatusInfo;
 
+typedef enum
+{
+    LUKS_DEV_MAP_CRYPT = 0,
+    LUKS_DEV_MAP_VERITY,
+    LUKS_DEV_MAP_INTEGRITY,
+    LUKS_DEV_MAP_LINEAR,
+    LUKS_DEV_MAP_ERROR,
+    LUKS_DEV_MAP_ZERO,
+    LUKS_DEV_MAP_UNKNOWN
+} LUKSDevMapTargetType;
+
 typedef int32_t LUKSKeySerial;
 
 typedef struct _LUKSCryptDevice LUKSCryptDevice;
@@ -93,6 +105,24 @@ typedef struct _LUKSCryptPbkdfType
     uint32_t                    parallelThreads;    // Requested parallel cost [threads]
     uint32_t                    flags;              // CRYPT_PBKDF* flags
 } LUKSCryptPbkdfType;
+
+typedef struct
+{
+    int                         exists;
+    int                         suspended;
+    int                         liveTable;
+    int                         inactiveTable;
+    int32_t                     openCount;
+    uint32_t                    eventNR;
+    uint32_t                    major;
+    uint32_t                    minor;              // minor device number
+    int                         readOnly;           // 0:read-write; 1:read-only
+
+    int32_t                     targetCount;
+
+    int                         deferredRemove;
+    int                         internalSuspend;
+} LUKSDevMapInfo;
 
 typedef struct _LUKSCryptParamsPlain
 {
@@ -171,5 +201,6 @@ int                     c_luks_crypt_deactivate             (C_IN LUKSCryptDevic
 
 C_END_EXTERN_C
 
+#endif
 
 #endif // purec_PUREC_LUKS_H

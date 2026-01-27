@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 #include "luks.h"
+#if 0
 
 #include <fcntl.h>
 #include <errno.h>
@@ -235,8 +236,15 @@ static void crypt_reset_null_type(LUKSCryptDevice* cd);
 
 static int init_crypto(LUKSCryptDevice *ctx);
 
-void dm_backend_init(LUKSCryptDevice* cd);
-void dm_backend_exit(LUKSCryptDevice* cd);
+static void dm_exit_context(void);
+void        dm_backend_init(LUKSCryptDevice* cd);
+void        dm_backend_exit(LUKSCryptDevice* cd);
+int         dm_status_device(LUKSCryptDevice* cd, const char *name);
+static int  dm_init_context(LUKSCryptDevice* cd, LUKSDevMapTargetType target);
+static int  dm_status_dmi(const char* name, LUKSDevMapInfo* dmi, const char *target, char** statusLine);
+
+static bool _dm_check_versions(LUKSCryptDevice* cd, LUKSDevMapTargetType targetType);
+
 
 LUKSDevice*     crypt_data_device(LUKSCryptDevice* cd);
 LUKSVolumeKey*  crypt_alloc_volume_key(size_t keyLength, const char *key);
@@ -322,8 +330,9 @@ static inline void* crypt_zalloc(size_t size)
 }
 
 
-static int _dm_use_count = 0;
-static int gsCryptoBackendInitialised = 0;
+static int                      _dm_use_count = 0;
+static int                      gsCryptoBackendInitialised = 0;
+static LUKSCryptDevice*         gsContext = NULL;
 
 
 int c_luks_crypt_init(LUKSCryptDevice** cd, const uint8_t* device)
@@ -427,6 +436,39 @@ int c_luks_crypt_format(LUKSCryptDevice* cd, const uint8_t* type, const uint8_t*
     }
 
     return r;
+}
+
+LUKSCryptStatusInfo c_luks_crypt_status(LUKSCryptDevice* cd, const uint8_t* name)
+{
+    int r = 0;
+
+    if (!name) {
+        return LUKS_CRYPT_STATUS_INFO_INVALID;
+    }
+
+    if (!cd) {
+        dm_backend_init(cd);
+    }
+
+    r = dm_status_device(cd, name);
+
+    if (!cd) {
+        dm_backend_exit(cd);
+    }
+
+    if (r < 0 && r != -ENODEV) {
+        return LUKS_CRYPT_STATUS_INFO_INVALID;
+    }
+
+    if (r == 0) {
+        return LUKS_CRYPT_STATUS_INFO_ACTIVE;
+    }
+
+    if (r > 0) {
+        return LUKS_CRYPT_STATUS_INFO_BUSY;
+    }
+
+    return LUKS_CRYPT_STATUS_INFO_INACTIVE;
 }
 
 static int init_crypto(LUKSCryptDevice* ctx)
@@ -1320,3 +1362,186 @@ LUKSDevice* crypt_metadata_device(LUKSCryptDevice* cd)
 {
     return cd->metaDataDevice ?: cd->device;
 }
+
+int dm_status_device(LUKSCryptDevice* cd, const char *name)
+{
+    int r;
+    LUKSDevMapInfo dmi;
+    struct stat st;
+
+    if (strchr(name, '/') && stat(name, &st) < 0) {
+        return -ENODEV;
+    }
+
+    if (dm_init_context(cd, LUKS_DEV_MAP_UNKNOWN)) {
+        return -ENOTSUP;
+    }
+
+    r = dm_status_dmi(name, &dmi, NULL, NULL);
+
+    dm_exit_context();
+
+    if (r < 0) {
+        return r;
+    }
+
+    return (dmi.openCount > 0) ? 1 : 0;
+}
+
+static void dm_exit_context(void)
+{
+    gsContext = NULL;
+}
+
+static int dm_init_context(LUKSCryptDevice* cd, LUKSDevMapTargetType target)
+{
+    gsContext = cd;
+    if (!_dm_check_versions(cd, target)) {
+        gsContext = NULL;
+        return -ENOTSUP;
+    }
+
+    return 0;
+}
+
+static bool _dm_check_versions(LUKSCryptDevice* cd, LUKSDevMapTargetType targetType)
+{
+    bool r = true;
+// 	struct dm_task *dmt;
+// 	struct dm_versions *target, *last_target;
+// 	char dm_version[16];
+// 	unsigned dm_maj, dm_min, dm_patch;
+// 	int r = 0;
+//
+// 	if ((target_type == DM_CRYPT     && _dm_crypt_checked) ||
+// 	    (target_type == DM_VERITY    && _dm_verity_checked) ||
+// 	    (target_type == DM_INTEGRITY && _dm_integrity_checked) ||
+// 	    (target_type == DM_ZERO      && _dm_zero_checked) ||
+// 	    (target_type == DM_LINEAR) ||
+// 	    (_dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked && _dm_zero_checked))
+// 		return 1;
+//
+// 	/* Shut up DM while checking */
+// 	_quiet_log = 1;
+//
+// 	_dm_check_target(target_type);
+//
+// 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
+// 		goto out;
+//
+// 	if (!dm_task_run(dmt))
+// 		goto out;
+//
+// 	if (!dm_task_get_driver_version(dmt, dm_version, sizeof(dm_version)))
+// 		goto out;
+//
+// 	if (!_dm_ioctl_checked) {
+// 		if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3)
+// 			goto out;
+// 		log_dbg(cd, "Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
+//
+// 		if (_dm_satisfies_version(4, 20, 0, dm_maj, dm_min, dm_patch))
+// 			_dm_flags |= DM_SECURE_SUPPORTED;
+// #if HAVE_DECL_DM_TASK_DEFERRED_REMOVE
+// 		if (_dm_satisfies_version(4, 27, 0, dm_maj, dm_min, dm_patch))
+// 			_dm_flags |= DM_DEFERRED_SUPPORTED;
+// #endif
+// #if HAVE_DECL_DM_DEVICE_GET_TARGET_VERSION
+// 		if (_dm_satisfies_version(4, 41, 0, dm_maj, dm_min, dm_patch))
+// 			_dm_flags |= DM_GET_TARGET_VERSION_SUPPORTED;
+// #endif
+// 	}
+//
+// 	target = dm_task_get_versions(dmt);
+// 	do {
+// 		last_target = target;
+// 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
+// 			_dm_set_crypt_compat(cd, (unsigned)target->version[0],
+// 					     (unsigned)target->version[1],
+// 					     (unsigned)target->version[2]);
+// 		} else if (!strcmp(DM_VERITY_TARGET, target->name)) {
+// 			_dm_set_verity_compat(cd, (unsigned)target->version[0],
+// 					      (unsigned)target->version[1],
+// 					      (unsigned)target->version[2]);
+// 		} else if (!strcmp(DM_INTEGRITY_TARGET, target->name)) {
+// 			_dm_set_integrity_compat(cd, (unsigned)target->version[0],
+// 						 (unsigned)target->version[1],
+// 						 (unsigned)target->version[2]);
+// 		} else if (!strcmp(DM_ZERO_TARGET, target->name)) {
+// 			_dm_set_zero_compat(cd, (unsigned)target->version[0],
+// 					    (unsigned)target->version[1],
+// 					    (unsigned)target->version[2]);
+// 		}
+// 		target = VOIDP_CAST(struct dm_versions *)((char *) target + target->next);
+// 	} while (last_target != target);
+//
+// 	r = 1;
+// 	if (!_dm_ioctl_checked)
+// 		log_dbg(cd, "Device-mapper backend running with UDEV support %sabled.",
+// 			_dm_use_udev() ? "en" : "dis");
+//
+// 	_dm_ioctl_checked = true;
+// out:
+// 	if (dmt)
+// 		dm_task_destroy(dmt);
+//
+// 	_quiet_log = 0;
+	return r;
+}
+
+static int dm_status_dmi(const char* name, LUKSDevMapInfo* dmi, const char *target, char **statusLine)
+{
+    struct dm_task *dmt;
+    uint64_t start, length;
+    char *target_type, *params = NULL;
+    int r = -EINVAL;
+
+    if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+        return r;
+
+    if (!dm_task_no_flush(dmt))
+        goto out;
+
+    if (!dm_task_set_name(dmt, name))
+        goto out;
+
+    if (!dm_task_run(dmt))
+        goto out;
+
+    if (!dm_task_get_info(dmt, dmi))
+        goto out;
+
+    if (!dmi->exists) {
+        r = -ENODEV;
+        goto out;
+    }
+
+    r = -EEXIST;
+    dm_get_next_target(dmt, NULL, &start, &length, &target_type, &params);
+
+    if (!target_type || start != 0)
+        goto out;
+
+    if (target && strcmp(target_type, target))
+        goto out;
+
+    /* for target == NULL check all supported */
+    if (!target && (strcmp(target_type, DM_CRYPT_TARGET) &&
+            strcmp(target_type, DM_VERITY_TARGET) &&
+            strcmp(target_type, DM_INTEGRITY_TARGET) &&
+            strcmp(target_type, DM_LINEAR_TARGET) &&
+            strcmp(target_type, DM_ZERO_TARGET) &&
+            strcmp(target_type, DM_ERROR_TARGET)))
+        goto out;
+    r = 0;
+
+out:
+    if (!r && status_line && !(*status_line = strdup(params)))
+        r = -ENOMEM;
+
+    dm_task_destroy(dmt);
+
+    return r;
+}
+
+#endif
